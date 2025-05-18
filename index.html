@@ -1,10 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sample Page</title>
+    <title>Room Styler</title>
+    <script>
+        async function uploadStyle() {
+            const file = document.getElementById('styleFile').files[0];
+            const form = new FormData();
+            form.append('image', file);
+            const res = await fetch('/upload/style', { method: 'POST', body: form });
+            const data = await res.json();
+            alert('Style uploaded: ' + data.id);
+            loadStyles();
+        }
+
+        async function uploadRoom() {
+            const file = document.getElementById('roomFile').files[0];
+            const form = new FormData();
+            form.append('image', file);
+            const res = await fetch('/upload/room', { method: 'POST', body: form });
+            const data = await res.json();
+            document.getElementById('roomId').value = data.id;
+        }
+
+        async function loadStyles() {
+            const res = await fetch('/styles');
+            const data = await res.json();
+            const select = document.getElementById('styleSelect');
+            select.innerHTML = '';
+            data.styles.forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = id;
+                select.appendChild(option);
+            });
+        }
+
+        async function applyStyle() {
+            const roomId = document.getElementById('roomId').value;
+            const styleId = document.getElementById('styleSelect').value;
+            const prompt = document.getElementById('extraPrompt').value;
+            const res = await fetch('/apply-style', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, styleId, prompt })
+            });
+            const data = await res.json();
+            if (data.url) {
+                document.getElementById('resultImage').src = data.url;
+            } else {
+                alert(data.error || 'Failed');
+            }
+        }
+
+        window.onload = loadStyles;
+    </script>
 </head>
 <body>
-    <h1>Welcome to the Sample Page</h1>
-    <p>This is a sample page.</p>
+    <h1>Room Styler</h1>
+
+    <h2>1. Upload style images</h2>
+    <input type="file" id="styleFile" />
+    <button onclick="uploadStyle()">Upload Style</button>
+
+    <h2>2. Upload your room photo</h2>
+    <input type="file" id="roomFile" />
+    <button onclick="uploadRoom()">Upload Room</button>
+    <input type="hidden" id="roomId" />
+
+    <h2>3. Select a style</h2>
+    <select id="styleSelect"></select>
+
+    <h2>4. Apply style</h2>
+    <input type="text" id="extraPrompt" placeholder="Additional prompt" />
+    <button onclick="applyStyle()">Transform</button>
+
+    <div style="margin-top:20px;">
+        <img id="resultImage" style="max-width:512px;" />
+    </div>
 </body>
 </html>
